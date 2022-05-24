@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: Errores
+  version: '1.0'
+  description: "# ERRORES\n\nPor medio de nuestra API, podrás ser notificado con toda la información en caso presentes un error al momento de hacer una petición a cualquier operación del API. La API de Culqi utiliza el estándar de Códigos de Estado HTTP (HTTP Status Codes) en todas sus respuestas para indicar si las solicitudes se pudieron procesar con éxito o fallaron.\n\n## Objeto Error\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Objecto\" />\n\n## Códigos HTTP\n\nCulqi usa los siguientes códigos de estado HTTP en sus respuestas:\n\n  | Código | HTTP Status | Descripción                         |\n  |--------|-------------|-------------------------------------|\n  | 200    | OK          | Todo ha salido a la perfección.     |\n  | 201    | Created     | Un nuevo recurso ha sido creado. (POST).     |\n  | 204    | No Content  | El recurso fue exitosamente eliminado. (DELETE)     |\n  | 400    | Bad Request          | La petición al servidor no ha podido ser procesada debido a una sintáxis incorrecta.     |\n  | 401    | Unauthorized          | La llave API utilizada es inválida.     |\n  | 402    | Payment Required\t          | El pago no pudo ser procesado.     |\n  | 404    | Not Found          | \tEl recurso solicitado en la llamada no existe.     |\n  | 422    | Unprocessable Entity          | La sintaxis de la llamada es válida pero la información dentro de los parámetros es inválida.     |                                                                      \n  | 500 y 503    | Server Errors          | \tError en los servidores Culqi y la petición no pudo ser procesada.     |  \n  \n  \n  \n### Tipos de Errores\n\nCulqi devuelve los siguientes tipos de errores relacionados con los códigos de estado HTTP en sus respuestas:\n\n  | Type| HTTP Status Code - Descripción |\n  |--------|-------------|\n  | invalid_request_error| HTTP 400 - La petición tiene una sintaxis inválida.|\n  | authentication_error| HTTP 401 - La petición no pudo ser procesada debido a problemas con las llaves.|\n  | parameter_error| HTTP 422 - Algún parámetro de cualquier petición es inválido.|\n  | card_error| HTTP 402 - No se pudo realizar el cargo a una tarjeta.|  \n  | limit_api_error| HTTP 429 - Estás haciendo muchas peticiones rápidamente al API o superaste tu límite designado.|  \n  | resource_error| HTTP 404 - El recurso no puede ser encontrado, es inválido o tiene un estado diferente al permitido.|  \n  | api_error| HTTP 500 y 503 - Engloba cualquier otro tipo de error (Ejemplo: problema temporal con los servidores de Culqi) y debería de ocurrir muy pocas veces.|  \n  \n\n### Codigos de Denegación de Bancos\n\nCulqi devuelve los siguientes tipos de denegaciones devueltas por los bancos:\n\n| Decline Code\t| Explicación |\n |--------|-------------|\n | expired_card\t| Tarjeta vencida. La tarjeta está vencida o la fecha de vencimiento ingresada es incorrecta.| \n | stolen_card| Tarjeta robada. La tarjeta fue bloqueada y reportada al banco emisor como una tarjeta robada| \n | lost_card| Tarjeta perdida. La tarjeta fue bloqueada y reportada al banco emisor como una tarjeta perdida.| \n | insufficient_funds| Fondos insuficientes. La tarjeta no tiene fondos suficientes para realizar la compra.| \n | contact_issuer| Contactar emisor. La operación fue denegada por el banco emisor de la tarjeta y el cliente necesita contactarse con la entidad para conocer el motivo.| \n  | invalid_cvv| CVV inválido. El código de seguridad (CVV2, CVC2, CID) de la tarjeta es inválido.| \n | too_many_attempts_cvv| Exceso CVV. El cliente ha intentado demasiadas veces ingresar el código de seguridad (CVV2, CVC2, CID) de la tarjeta.| \n | issuer_not_available| Emisor no disponible. El banco que emitió la tarjeta no responde. El cliente debe realizar el pago nuevamente.| \n | issuer_decline_operation| Operación denegada. La operación fue denegada por el banco emisor de la tarjeta por una razón desconocida.| \n  |invalid_card| Tarjeta inválida. La tarjeta utilizada tiene restricciones para este tipo de compras. El cliente necesita contactarse con el banco emisor para conocer el motivo de la denegación.| \n  |processing_error| Error de procesamiento. Ocurrió un error mientras procesabamos la compra. Contáctate con culqi.com/soporte para que te demos una solución.| \n  |fraudulent| Operación fraudulenta. El banco emisor de la tarjeta sospecha que se trata de una compra fraudulenta.| \n  |culqi_card| Tarjeta Culqi. Estás utilizando una tarjeta de pruebas de Culqi para realizar una compra real.| \n  |soft_block| Tarjeta con bloqueo temporal por reintentos. El cliente debe intentar nuevamente con otra tarjeta.| \n  \n### Casos de Errores\n\nA continuación te presentamos una serie de ejemplos de errores comunes a la hora de integrar la API de Culqi.\n\n#### Petición Inválida\nEl formato de la petición no es JSON.\n\n```json\n{\n  \"object\": \"error\",\n  \"type\": \"invalid_request_error\",\n  \"merchant_message\": \"Petición invalida, verifica que el Content-Type sea\n  application/json (formato JSON) y el cuerpo un JSON válido.\"\n}\n```\n\n#### Autenticación\nNo ingresate una llave de autenticación válida.\n\n```json\n{\n  \"object\": \"error\",\n  \"type\": \"authentication_error\",\n  \"code\": \"invalid_key\",\n  \"merchant_message\": \"Código de comercio proporcionado inválido: AJVBX245.\n   Revisa tus llaves correctas en tu panel Culqi (http://culqi.com).\"\n}\n```\n\n#### Parámetros Inválidos\nIngresaste un parámetro inválido.\n\n```json\n{\n  \"object\": \"error\",\n  \"type\": \"parameter_error\",\n  \"code\": \"invalid_amount\",\n  \"merchant_message\": \"El campo 'amount' es inválido.  El valor debe ser mayor\n   o igual que '100' (1 Nuevo Sol) .\",\n  \"param\": \"amount\"\n}\n```\n\n#### Tarjetas Denegadas\nEl banco denegó la compra porque el cliente no tenía fondos suficientes.\n\n```json\n{\n  \"object\": \"error\",\n  \"type\": \"card_error\",\n  \"charge_id\": \"chr_test_stm3Fr4HIPC50qxH\",\n  \"code\": \"card_declined\",\n  \"decline_code\": \"insufficient_funds\"\n  \"merchant_message\": \"La La tarjeta no tiene fondos suficientes para realizar\n  la compra. \",\n  \"user_message\": \"Su tarjeta no tiene fondos suficientes. Verifica tus fondos\n   disponibles con el banco emisor o inténta nuevamente con otra tarjeta.\"\n}\n```\n\n### Manejo de Errores\nNuestras bibliotecas manejan excepciones por muchas razones. Entre ellas cargos denegados, parámetros inválidos, errores de autenticación y no disponibilidad de los bancos emisores. Recomendamos que contemples todos los escenarios y manejes todas las excepciones que presenta nuestra API."
+servers:
+  - url: 'http://localhost:3000'
+paths: {}
+components:
+  schemas:
+    Error:
+      title: Error
+      x-stoplight:
+        id: cdf0b60xrfumj
+      type: object
+      examples:
+        - id: string
+      properties:
+        id:
+          type: string
+          enum:
+            - invalid_request_error
+    Objecto:
+      title: Objecto
+      x-stoplight:
+        id: th7ghbb22gn9b
+      type: object
+      properties:
+        type:
+          type: string
+          description: Indica el tipo de error devuelto
+          example: '"card_error"'
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - parameter_error
+            - card_error
+            - limit_api_error
+            - resource_error
+            - api_error
+        charge_id:
+          type: string
+          description: El ID del cargo que ha sido denegado
+          example: '"chr_test_stm3Fr4HIPC50qxH"'
+        code:
+          type: string
+          description: "\t\nIndica el tipo de error relacionado a una tarjeta"
+          example: ' "card_declined"'
+        declined_code:
+          type: string
+          description: Indica el motivo de denegación devuelto por los bancos.
+          example: '"insufficient_funds"'
+        merchant_message:
+          type: string
+          description: Mensaje dirigido al comercio para conocer el detalle del error.
+          example: ' "La tarjeta no tiene fondos suficientes para realizar la compra."'
+        user_message:
+          type: string
+          description: Mensaje dirigido al cliente para conocer el detalle del error.
+          example: ' "Su tarjeta no tiene fondos suficientes. Verifica tus fondos disponibles con el banco emisor o inténta nuevamente con otra tarjeta."'
+        param:
+          type: string
+          description: "\t\nIndica el parámetro específico relacionado al error."
+          example: ' "amount"'
+      required:
+        - type
+        - merchant_message
